@@ -1,0 +1,12 @@
+[package]
+name = "fractal"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+winit = "0.30.5"
+wgpu = "22.1.0"
+nalgebra = "0.33.1"
+pollster = "0.3.0"
+bytemuck = "1.19.0"
+num-traits = "0.2.19"
