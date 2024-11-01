@@ -45,15 +45,10 @@ impl From<f32> for FixedDec {
         if parts.is_empty() {
             dec = 0;
         }
-        let s = Self {
-            sign: POS,
+        Self {
+            sign: value.is_sign_negative(),
             dec,
             parts,
-        };
-        if value.is_sign_negative() {
-            -&s
-        } else {
-            s
         }
     }
 }
@@ -66,16 +61,8 @@ impl From<FixedDec> for f32 {
 
 impl From<&FixedDec> for f32 {
     fn from(value: &FixedDec) -> Self {
-        if value.is_zero() {
-            return if value.sign == POS { 0.0 } else { -0.0 };
-        }
-        let mut sign = 0;
-        let value = if value.is_neg() {
-            sign = 1 << 31;
-            &-value
-        } else {
-            value
-        };
+        let sign = if value.is_neg() { 1 << 31 } else { 0 };
+
         let mut skip_count = 0;
         let mut iter = value.parts.iter().peekable();
 
@@ -85,7 +72,7 @@ impl From<&FixedDec> for f32 {
         }
 
         let Some(v) = iter.next() else {
-            return 0.0;
+            return if value.is_pos() { 0.0 } else { -0.0 };
         };
         let mut start = v.leading_zeros() + 1;
         let exp_i = (value.dec - skip_count) * 32 - start as i32;
@@ -113,5 +100,25 @@ impl From<&FixedDec> for f32 {
         } & !(1 << 23);
         let res = (frac >> frac_sh) + (exp << 23) + sign;
         f32::from_bits(res)
+    }
+}
+
+impl From<u32> for FixedDec {
+    fn from(value: u32) -> Self {
+        Self {
+            dec: 1,
+            sign: POS,
+            parts: vec![value],
+        }
+    }
+}
+
+impl From<i32> for FixedDec {
+    fn from(value: i32) -> Self {
+        Self {
+            dec: 1,
+            sign: value.is_negative(),
+            parts: vec![value.try_into().unwrap_or((-value) as u32)],
+        }
     }
 }

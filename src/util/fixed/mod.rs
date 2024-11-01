@@ -9,6 +9,14 @@ use std::fmt::{Binary, Display};
 const POS: bool = false;
 const NEG: bool = true;
 
+// dec is from the left instead of from the right
+// because this is a fractal viewer, so it's expected
+// that people zoom in instead of out; parts also has
+// the most significant u32 at 0, so to zoom in you just
+// have to add to the vec instead of insert at 0
+// Might want to try to make it abstract over the direction
+// of growth, or use a VecDeque, but doesn't seem worth for
+// now
 #[derive(Debug, Clone, PartialEq)]
 pub struct FixedDec {
     sign: bool,
@@ -17,6 +25,10 @@ pub struct FixedDec {
 }
 
 impl FixedDec {
+    pub fn from_parts(sign: bool, dec: i32, parts: Vec<u32>) -> Self {
+        Self { sign, dec, parts }
+    }
+
     pub fn zeros() -> Self {
         Self::zero()
     }
@@ -41,11 +53,7 @@ impl FixedDec {
     }
 
     pub fn trim(&mut self) {
-        let rem_beg = self
-            .parts
-            .iter()
-            .take_while(|&&x| x == 0)
-            .count();
+        let rem_beg = self.parts.iter().take_while(|&&x| x == 0).count();
         self.parts.drain(0..rem_beg);
         let rem_end = self.parts.iter().rev().take_while(|&&x| x == 0).count();
         self.parts.truncate(self.parts.len() - rem_end);
@@ -54,6 +62,37 @@ impl FixedDec {
         } else {
             self.dec -= rem_beg as i32;
         }
+    }
+
+    pub fn set_whole_len(&mut self, len: i32) {
+        let diff = len - self.dec;
+        self.parts
+            .splice(0..usize::try_from(-diff).unwrap_or(0), (0..diff).map(|_| 0));
+        self.dec += diff;
+        if self.parts.is_empty() {
+            self.dec = 0;
+        }
+    }
+
+    pub fn set_dec_len(&mut self, len: i32) {
+        let len = usize::try_from(len + self.dec).unwrap_or(0);
+        self.parts.resize(len, 0);
+        if self.parts.is_empty() {
+            self.dec = 0;
+        }
+    }
+
+    pub fn set_precision(&mut self, prec: usize) {
+        self.parts.resize(prec, 0);
+        if self.parts.is_empty() {
+            self.dec = 0;
+        }
+    }
+
+    pub fn to_bytes(&self, bytes: &mut Vec<u8>) {
+        bytes.extend((self.sign as u32).to_le_bytes());
+        bytes.extend(self.dec.to_le_bytes());
+        bytes.extend(self.parts.iter().flat_map(|p| p.to_le_bytes()));
     }
 }
 
@@ -70,8 +109,9 @@ impl Binary for FixedDec {
         }
         if self.dec < 0 {
             write!(f, ".")?;
-            for _ in 0..(-self.dec) {
-                write!(f, "00000000000000000000000000000000")?;
+            write!(f, "00000000000000000000000000000000")?;
+            for _ in 0..(-self.dec - 1) {
+                write!(f, "_00000000000000000000000000000000")?;
             }
         }
         for (i, part) in self.parts.iter().enumerate() {
@@ -81,6 +121,12 @@ impl Binary for FixedDec {
                 write!(f, "_")?;
             }
             write!(f, "{:032b}", part)?;
+        }
+        let diff = usize::try_from(self.dec)
+            .unwrap_or(0)
+            .saturating_sub(self.parts.len());
+        for _ in 0..diff {
+            write!(f, "_00000000000000000000000000000000")?;
         }
         Ok(())
     }

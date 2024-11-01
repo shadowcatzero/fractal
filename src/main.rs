@@ -1,4 +1,6 @@
 #![feature(bigint_helper_methods)]
+#![feature(int_roundings)]
+#![feature(unbounded_shifts)]
 
 use client::ClientApp;
 

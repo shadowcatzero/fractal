@@ -16,19 +16,19 @@ impl Zero for FixedDec {
     }
 }
 
-impl Shr<u32> for FixedDec {
+impl Shr<i32> for FixedDec {
     type Output = Self;
 
-    fn shr(self, rhs: u32) -> Self::Output {
-        let mut parts = Vec::new();
-        let sr = rhs % 32;
-        let sl = 32 - sr;
+    fn shr(self, rhs: i32) -> Self::Output {
+        let mut parts = Vec::with_capacity(self.parts.len());
+        let sr = rhs.rem_euclid(32);
+        let sl = 32 - sr as u32;
         let mask = (1 << sr) - 1;
-        let dec = self.dec - (rhs / 32) as i32;
+        let dec = self.dec - rhs.div_floor(32);
         let mut rem = 0;
         for part in self.parts {
             parts.push((part >> sr) ^ rem);
-            rem = (part & mask) << sl;
+            rem = (part & mask).unbounded_shl(sl);
         }
         if rem != 0 {
             parts.push(rem);
@@ -98,22 +98,31 @@ impl Add for &FixedDec {
     }
 }
 
-fn add(dest: &mut FixedDec, at: &impl Fn(usize) -> u32, rhs: &FixedDec) {
+fn add(dest: &mut FixedDec, src: &impl Fn(usize) -> u32, rhs: &FixedDec) {
     let mut carry = false;
-    let same_sign = dest.sign == rhs.sign;
     let rhs_offset = rhs.dec - dest.dec;
-    for i in (0..dest.parts.len()).rev() {
-        let a = at(i);
-        let b = rhs.part(i as i32 + rhs_offset);
-        (dest.parts[i], carry) = carry_add(a, b, same_sign, carry);
-    }
-    if same_sign {
+    if dest.sign == rhs.sign {
+        for i in (0..dest.parts.len()).rev() {
+            let a = src(i);
+            let b = rhs.part(i as i32 + rhs_offset);
+            (dest.parts[i], carry) = a.carrying_add(b, carry);
+        }
         if carry {
             dest.parts.insert(0, 1);
             dest.dec += 1;
         }
-    } else if carry {
-        dest.sign = !dest.sign
+    } else {
+        for i in (0..dest.parts.len()).rev() {
+            let a = src(i);
+            let b = rhs.part(i as i32 + rhs_offset);
+            (dest.parts[i], carry) = a.borrowing_sub(b, carry);
+        }
+        if carry {
+            dest.sign = !dest.sign;
+            for part in &mut dest.parts {
+                *part = !*part;
+            }
+        }
     }
 }
 
@@ -123,16 +132,6 @@ fn new_dec(x: &FixedDec, y: &FixedDec) -> (i32, usize) {
     let right_i = x.dec_len().max(y.dec_len());
     let len = (right_i - left_i) as usize;
     (dec, len)
-}
-
-fn carry_add(a: u32, b: u32, same_sign: bool, carry: bool) -> (u32, bool) {
-    if same_sign {
-        a.carrying_add(b, carry)
-    } else {
-        let (res, c) = a.overflowing_sub(b);
-        let (res, c2) = res.overflowing_sub(carry as u32);
-        (res, c || c2)
-    }
 }
 
 impl Sub for &FixedDec {
@@ -147,7 +146,7 @@ impl Sub for FixedDec {
     type Output = Self;
 
     fn sub(mut self, rhs: Self) -> Self::Output {
-        self += &(-rhs);
+        self -= &rhs;
         self
     }
 }
@@ -192,8 +191,7 @@ impl Mul for &FixedDec {
                 // let (lsb, msb) = mul_lmsb(x, y);
                 let k = i + j + 1;
                 let (res, carry1) = parts[k].overflowing_add(lsb);
-                parts[k] = res;
-                let (res, carry2) = parts[k].overflowing_add(carry);
+                let (res, carry2) = res.overflowing_add(carry);
                 parts[k] = res;
                 // dude I have no clue if this can overflow; I know msb can take 1 without
                 // overflowing, but I'm not sure if 2 can get here when it's max
@@ -213,6 +211,22 @@ impl Mul for FixedDec {
 
     fn mul(self, rhs: Self) -> Self::Output {
         &self * &rhs
+    }
+}
+
+impl Mul<&FixedDec> for FixedDec {
+    type Output = FixedDec;
+
+    fn mul(self, rhs: &FixedDec) -> Self::Output {
+        &self * rhs
+    }
+}
+
+impl Mul<FixedDec> for &FixedDec {
+    type Output = FixedDec;
+
+    fn mul(self, rhs: FixedDec) -> Self::Output {
+        self * &rhs
     }
 }
 

@@ -1,19 +1,23 @@
-use super::{util::Uniform, View};
+use super::{util::Storage, View};
 
 pub struct TileLayout {
     render_bind_layout: wgpu::BindGroupLayout,
     render_pipeline_layout: wgpu::PipelineLayout,
     format: wgpu::TextureFormat,
-    pub view: Uniform<View>,
+    pub view: Storage,
 }
 
 impl TileLayout {
     pub fn init(device: &wgpu::Device, config: &wgpu::SurfaceConfiguration) -> Self {
-        let view = Uniform::init(device, "view");
+        let view = Storage::init_with(
+            device,
+            "view",
+            View::default().bytes(),
+        );
 
         let render_bind_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
-                entries: &[view.bind_group_layout_entry(0)],
+                entries: &[view.bind_group_layout_entry(0, true)],
                 label: Some("voxel render"),
             });
 

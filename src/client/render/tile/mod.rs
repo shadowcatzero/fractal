@@ -36,7 +36,7 @@ impl TilePipeline {
         camera: &Camera,
         size: &Vector2<u32>,
     ) {
-        self.view.update(device, encoder, belt, View::new(size));
+        self.view.update(device, encoder, belt, View::from_camera_size(camera, size).bytes());
     }
 
     pub fn draw<'a>(&'a self, render_pass: &mut wgpu::RenderPass<'a>) {

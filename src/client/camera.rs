@@ -3,10 +3,11 @@ use std::ops::AddAssign;
 
 use crate::util::FixedDec;
 
-#[derive(Clone, Copy)]
+#[derive(Clone)]
 pub struct Zoom {
-    scale: f32,
-    mult: f32,
+    exp: f32,
+    level: i32,
+    mult: FixedDec,
 }
 
 #[derive(Clone)]
@@ -30,30 +31,43 @@ impl Default for Camera {
     fn default() -> Self {
         Self {
             pos: Vector2::zeros(),
-            zoom: Zoom::new(0.0),
+            zoom: Zoom::new(0, 0.0),
         }
     }
 }
 
 impl Zoom {
-    pub fn new(scale: f32) -> Self {
+    pub fn new(level: i32, scale: f32) -> Self {
         Self {
-            scale,
-            mult: mult(scale),
+            exp: scale,
+            level,
+            mult: mult(level, scale),
         }
     }
-    pub fn mult(&self) -> f32 {
-        self.mult
+    pub fn mult(&self) -> &FixedDec {
+        &self.mult
+    }
+    pub fn level(&self) -> i32 {
+        self.level
     }
 }
 
 impl AddAssign<f32> for Zoom {
+    #[allow(clippy::suspicious_op_assign_impl)]
     fn add_assign(&mut self, rhs: f32) {
-        self.scale += rhs;
-        self.mult = mult(self.scale);
+        self.exp -= rhs;
+        while self.exp <= -0.5 {
+            self.exp += 1.0;
+            self.level += 1;
+        }
+        while self.exp > 0.5 {
+            self.exp -= 1.0;
+            self.level -= 1;
+        }
+        self.mult = mult(self.level, self.exp);
     }
 }
 
-pub fn mult(scale: f32) -> f32 {
-    (-scale).exp2()
+pub fn mult(level: i32, exp: f32) -> FixedDec {
+    (FixedDec::from(1) >> level) * FixedDec::from(exp.exp2())
 }
