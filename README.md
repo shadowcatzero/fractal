@@ -1,5 +1,7 @@
 # Fractal Viewer
 
+![screenshot image here](screenshot.png)
+
 This is a mandelbrot set arbitaray precision fractal viewer written for fun bc they look cool.
 
 ## Features
