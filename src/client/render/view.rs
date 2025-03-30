@@ -44,14 +44,15 @@ impl ChunkView {
 
         let mut visible = HashSet::new();
         let mut x = blc.x.clone();
-        while x <= trc.x {
-            let mut y = blc.y.clone();
-            while y <= trc.y {
-                visible.insert(Vector2::new(x.clone(), y.clone()));
-                y += FixedDec::one();
-            }
-            x += FixedDec::one();
-        }
+        // while x <= trc.x {
+        //     let mut y = blc.y.clone();
+        //     while y <= trc.y {
+        //         visible.insert(Vector2::new(x.clone(), y.clone()));
+        //         y += FixedDec::one();
+        //     }
+        //     x += FixedDec::one();
+        // }
+
 
         let new = visible
             .difference(&self.visible_chunks)

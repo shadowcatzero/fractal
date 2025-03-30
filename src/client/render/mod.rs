@@ -125,7 +125,7 @@ impl Renderer<'_> {
 
         // this comes from the fact that I want (0, 2) and (30, 4)
         // probably a much better formula, or better yet let the user select
-        self.len = (camera.zoom.level() as f32 / 15.0 + 2.0).round() as usize;
+        self.len = (camera.zoom.level() as f32 / 32.0 + 2.0).round() as usize;
 
         self.compute_pipeline.update(
             &self.device,
