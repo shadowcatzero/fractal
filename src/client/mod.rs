@@ -60,8 +60,7 @@ impl Client<'_> {
             WindowEvent::CloseRequested => self.exit = true,
             WindowEvent::Resized(size) => self.renderer.resize(size),
             WindowEvent::RedrawRequested => {
-                self.renderer.update(&self.camera);
-                self.renderer.draw();
+                self.renderer.render(&self.camera);
                 self.window.request_redraw();
             }
             WindowEvent::CursorLeft { .. } => {

@@ -16,7 +16,6 @@ impl Client<'_> {
         }
 
         let speed = FixedDec::from(per_sec * 0.5) * camera.zoom.mult();
-        let old = f32::from(&camera.pos.x);
         if input.pressed(K::KeyW) {
             camera.pos.y += &speed;
         }
@@ -28,10 +27,6 @@ impl Client<'_> {
         }
         if input.pressed(K::KeyD) {
             camera.pos.x += &speed;
-        }
-        let new = f32::from(&camera.pos.x);
-        if (new - old).abs() > 0.5 {
-            println!("{} + {} = {}", old, f32::from(speed), new);
         }
     }
 }

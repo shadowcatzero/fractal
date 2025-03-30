@@ -1,14 +1,21 @@
-mod tile;
+mod compute;
+mod output;
 mod util;
+mod view;
 
 use std::sync::Arc;
 
+use compute::ComputePipeline;
 use nalgebra::Vector2;
-use tile::TilePipeline;
+use output::RenderPipeline;
 use util::GPUTimer;
+use view::ChunkView;
 use winit::{dpi::PhysicalSize, window::Window};
 
 use super::camera::Camera;
+
+const CHUNK_POW: u32 = 7;
+const CHUNK_WIDTH: u32 = 2u32.pow(CHUNK_POW);
 
 pub struct Renderer<'a> {
     size: Vector2<u32>,
@@ -19,15 +26,18 @@ pub struct Renderer<'a> {
     config: wgpu::SurfaceConfiguration,
     staging_belt: wgpu::util::StagingBelt,
     timer: GPUTimer,
+    chunk_view: ChunkView,
+    len: usize,
 
-    tile_pipeline: TilePipeline,
+    compute_pipeline: ComputePipeline,
+    render_pipeline: RenderPipeline,
 }
 
 impl Renderer<'_> {
     pub fn new(window: Arc<Window>) -> Self {
         let size = window.inner_size();
 
-        let instance = wgpu::Instance::new(wgpu::InstanceDescriptor {
+        let instance = wgpu::Instance::new(&wgpu::InstanceDescriptor {
             backends: wgpu::Backends::PRIMARY,
             ..Default::default()
         });
@@ -90,8 +100,14 @@ impl Renderer<'_> {
         let staging_belt = wgpu::util::StagingBelt::new(1024);
         let timer = GPUTimer::new(&device, queue.get_timestamp_period(), 1);
 
+        let len = 2;
+
+        let compute_pipeline = ComputePipeline::init(&device, &config, len);
+        let render_pipeline = RenderPipeline::init(&device, &config, &compute_pipeline.output);
+
         Self {
-            tile_pipeline: TilePipeline::init(&device, &config),
+            render_pipeline,
+            compute_pipeline,
             size: Vector2::new(size.width, size.height),
             staging_belt,
             surface,
@@ -100,46 +116,43 @@ impl Renderer<'_> {
             device,
             config,
             queue,
+            chunk_view: ChunkView::new(),
+            len,
         }
     }
 
-    pub fn update(&mut self, camera: &Camera) {
-        self.tile_pipeline.update(
+    pub fn render(&mut self, camera: &Camera) {
+
+        self.len = (camera.zoom.level() as f32 / 15.0 + 2.0).round() as usize;
+        println!("{}", self.len);
+        // let new = (camera.zoom.level() as f32 / 15.0 + 2.0).round() as usize;
+        // println!("{}", new);
+
+        self.compute_pipeline.update(
             &self.device,
             &mut self.encoder,
             &mut self.staging_belt,
             camera,
             &self.size,
+            self.len,
         );
-    }
+        self.chunk_view.update(camera, &self.size);
+        self.render_pipeline.update(
+            &self.device,
+            &mut self.encoder,
+            &mut self.staging_belt,
+            &self.chunk_view.render,
+        );
 
-    pub fn draw(&mut self) {
         let mut encoder = std::mem::replace(&mut self.encoder, Self::create_encoder(&self.device));
         let output = self.surface.get_current_texture().unwrap();
-        let view = output
-            .texture
-            .create_view(&wgpu::TextureViewDescriptor::default());
 
         self.timer.start(&mut encoder, 0);
-        let mut render_pass = encoder.begin_render_pass(&wgpu::RenderPassDescriptor {
-            label: Some("Render Pass"),
-            color_attachments: &[Some(wgpu::RenderPassColorAttachment {
-                view: &view,
-                resolve_target: None,
-                ops: wgpu::Operations {
-                    load: wgpu::LoadOp::Clear(wgpu::Color::BLACK),
-                    store: wgpu::StoreOp::Store,
-                },
-            })],
-            depth_stencil_attachment: None,
-            timestamp_writes: None,
-            occlusion_query_set: None,
-        });
-        self.tile_pipeline.draw(&mut render_pass);
-        drop(render_pass);
+        self.compute_pipeline.run(&mut encoder);
         self.timer.stop(&mut encoder, 0);
-
         self.timer.resolve(&mut encoder);
+
+        self.render_pipeline.draw(&mut encoder, &output);
 
         self.staging_belt.finish();
         self.queue.submit(std::iter::once(encoder.finish()));
@@ -154,6 +167,8 @@ impl Renderer<'_> {
         self.config.width = size.width;
         self.config.height = size.height;
         self.surface.configure(&self.device, &self.config);
+        self.compute_pipeline.resize(&self.device, &mut self.encoder, &mut self.staging_belt, self.size, self.len);
+        self.render_pipeline.resize(&self.device, self.size, &self.compute_pipeline.output);
     }
 
     fn create_encoder(device: &wgpu::Device) -> wgpu::CommandEncoder {

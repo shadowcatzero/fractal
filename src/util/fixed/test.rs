@@ -15,7 +15,7 @@ macro_rules! assert_eq_bits {
     ($left:expr, $left_bits:expr, $right:expr, $right_bits:expr, $dec:expr $(,)?) => {
         assert!(
             ($left - $right).abs() < EPSILON,
-            "\n  left: {:032b} = {:?}\n right: {:032b} = {:?}\n  from: {:?}",
+            "\n  expect: {:032b} = {:?}\n found: {:032b} = {:?}\n  from: {:?}",
             $left_bits,
             $left,
             $right_bits,
@@ -26,7 +26,7 @@ macro_rules! assert_eq_bits {
     ($left:expr, $left_bits:expr, $right:expr, $right_bits:expr, $dec:expr, $arg:tt, $($args:tt)+) => {
         assert!(
             ($left - $right).abs() < EPSILON,
-            concat!("\n  expr: ", $arg, "\n  left: {:032b} = {:?}\n right: {:032b} = {:?}\n  from: {:?}"),
+            concat!("\n  expr: ", $arg, "\nexpect: {:032b} = {:?}\n found: {:032b} = {:?}\n  from: {:?}"),
             $($args)+,
             $left_bits,
             $left,
@@ -71,6 +71,7 @@ fn add_sub() {
         let dec = FixedDec::from(x) + FixedDec::from(y);
         assert_eq_f32!(a, f32::from(&dec), dec, "{} + {}", x, y);
     }
+    test(-0.0, 1.0);
     test(0.25, 0.75);
     test(1.25, 0.125);
     test(1.25, -0.125);
@@ -129,4 +130,24 @@ fn shr() {
     test(1, -3);
     test(1, 33);
     test(1, -33);
+}
+
+#[test]
+fn ord() {
+    fn test(x: f32, y: f32) {
+        let l = FixedDec::from(x);
+        let r = FixedDec::from(y);
+        assert_eq!(x > y, l > r, "{:?} > {:?}", x, y);
+        assert_eq!(x < y, l < r, "{:?} > {:?}", x, y);
+        assert_eq!(x == y, l == r, "{:?} > {:?}", x, y);
+    }
+    test(1.0, 3.0);
+    test(1.0, -3.0);
+    test(-1.0, 3.0);
+    test(-1.0, -33.0);
+    test(-1.5, -33.0);
+    test(-1.5, 66.0);
+    test(-1.5, -1.5);
+    test(0.0, 0.0);
+    test(1.5000, -33.0);
 }

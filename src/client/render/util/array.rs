@@ -6,7 +6,7 @@ pub struct ArrayBuffer<T: bytemuck::Pod> {
     buffer: wgpu::Buffer,
     label: String,
     usage: BufferUsages,
-    updates: Vec<ArrBufUpdate<T>>,
+    update: Option<Vec<T>>,
 }
 
 impl<T: bytemuck::Pod> ArrayBuffer<T> {
@@ -36,34 +36,24 @@ impl<T: bytemuck::Pod> ArrayBuffer<T> {
         if self.len == 0 {
             return resized;
         }
-        for update in &self.updates {
+        if let Some(update) = self.update.take() {
             let mut view = belt.write_buffer(
                 encoder,
                 &self.buffer,
-                (update.offset * std::mem::size_of::<T>()) as BufferAddress,
+                0,
                 unsafe {
-                    std::num::NonZeroU64::new_unchecked(
-                        std::mem::size_of_val(&update.data[..]) as u64
-                    )
+                    std::num::NonZeroU64::new_unchecked(std::mem::size_of_val(&update[..]) as u64)
                 },
                 device,
             );
-            view.copy_from_slice(bytemuck::cast_slice(&update.data));
+            view.copy_from_slice(bytemuck::cast_slice(&update));
         }
-        self.updates.clear();
         resized
     }
 
-    pub fn add(&mut self, data: Vec<T>) -> usize {
-        let data_len = data.len();
-        let pos = self.new_len;
-        self.updates.push(ArrBufUpdate { offset: pos, data });
-        self.new_len += data_len;
-        pos
-    }
-
-    pub fn set(&mut self, offset: usize, data: Vec<T>) {
-        self.updates.push(ArrBufUpdate { offset, data });
+    pub fn set(&mut self, data: Vec<T>) {
+        self.new_len = data.len();
+        self.update = Some(data);
     }
 
     pub fn init(device: &wgpu::Device, label: &str, usage: BufferUsages) -> Self {
@@ -82,7 +72,7 @@ impl<T: bytemuck::Pod> ArrayBuffer<T> {
                 Self::init_buf_with(device, label, usage, data)
             },
             label: label.to_string(),
-            updates: Vec::new(),
+            update: None,
             usage,
         }
     }
@@ -117,8 +107,8 @@ impl<T: bytemuck::Pod> ArrayBuffer<T> {
     pub fn bind_group_layout_entry(
         &self,
         binding: u32,
-        visibility: wgpu::ShaderStages,
         ty: wgpu::BufferBindingType,
+        visibility: wgpu::ShaderStages,
     ) -> wgpu::BindGroupLayoutEntry {
         wgpu::BindGroupLayoutEntry {
             binding,

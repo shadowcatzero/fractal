@@ -50,6 +50,9 @@ impl Zoom {
     pub fn level(&self) -> i32 {
         self.level
     }
+    pub fn rel_zoom(&self) -> f32 {
+        self.exp.exp2()
+    }
 }
 
 impl AddAssign<f32> for Zoom {

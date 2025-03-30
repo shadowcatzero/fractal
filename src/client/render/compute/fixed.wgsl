@@ -1,14 +1,5 @@
-const LEN: u32 = 3;
-const ILEN: i32 = 3;
-const LEN2: u32 = LEN * 2;
-
-struct View {
-    stretch: vec2<f32>,
-    level: i32,
-    scale: FixedDec,
-    x: FixedDec,
-    y: FixedDec,
-}
+const POS: u32 = 0u;
+const NEG: u32 = 1u;
 
 struct FixedDec {
     sign: u32,
@@ -16,63 +7,18 @@ struct FixedDec {
     parts: array<u32, LEN>,
 }
 
-@group(0) @binding(0)
-var<storage> view: View;
-
-struct VertexOutput {
-    @builtin(position) vertex_pos: vec4<f32>,
-    @location(0) world_pos: vec2<f32>,
-};
-
-@vertex
-fn vs_main(
-    @builtin(vertex_index) vi: u32,
-    @builtin(instance_index) ii: u32,
-) -> VertexOutput {
-    var out: VertexOutput;
-
-    let pos = vec2<f32>(
-        f32(vi % 2u),
-        f32(vi / 2u),
-    ) * 2.0 - 1.0;
-    out.vertex_pos = vec4<f32>(pos.x, -pos.y, 0.0, 1.0);
-    out.world_pos = pos;
-    out.world_pos.y *= -1.0;
-    out.world_pos *= view.stretch;
-    return out;
-}
-
-@fragment
-fn fs_main(
-    in: VertexOutput,
-) -> @location(0) vec4<f32> {
-    let cx = add(mul(from_f32(in.world_pos.x), view.scale), view.x);
-    let cy = add(mul(from_f32(in.world_pos.y), view.scale), view.y);
-    var x = zero();
-    var y = zero();
-    let two = from_f32(2.0);
-    let thresh = from_f32(2.0 * 2.0);
-    var i = 0u;
-    let max = 50u + (1u << u32(view.level));
-    loop {
-        let x2 = mul(x, x);
-        let y2 = mul(y, y);
-        if gt(add(x2, y2), thresh) || i >= max {
-            break;
-        }
-        y = add(mul(two, mul(x, y)), cy);
-        x = add(sub(x2, y2), cx);
-        i += 1u;
+fn shr(lhs: FixedDec, rhs: i32) -> FixedDec {
+    var parts = array<u32, LEN>();
+    let sr = u32(rem_euclid(rhs, 32));
+    let sl = 32 - sr;
+    let mask = (1u << sr) - 1;
+    var rem = 0u;
+    for (var i = 0; i < ILEN; i += 1) {
+        let part = lhs.parts[i];
+        parts[i] = (part >> sr) ^ rem;
+        rem = (part & mask) << sl;
     }
-    var color = vec3<f32>(0.0, 0.0, 0.0);
-    if i != max {
-        let pi = 3.1415;
-        let hue = f32(i) / 30.0;
-        color.r = cos(hue);
-        color.g = cos(hue - 2.0 * pi / 3.0);
-        color.b = cos(hue - 4.0 * pi / 3.0);
-    }
-    return vec4(color, 1.0);
+    return FixedDec(lhs.sign, lhs.dec, parts);
 }
 
 fn add(lhs: FixedDec, rhs: FixedDec) -> FixedDec {
@@ -136,9 +82,6 @@ fn at(dec: FixedDec, i: i32) -> u32 {
     return parts[i];
 }
 
-const POS: u32 = 0u;
-const NEG: u32 = 1u;
-
 fn mul(lhs: FixedDec, rhs: FixedDec) -> FixedDec {
     let sign = u32(lhs.sign != rhs.sign);
     var parts = array<u32, LEN2>();
@@ -173,7 +116,7 @@ fn mul(lhs: FixedDec, rhs: FixedDec) -> FixedDec {
             let res2 = res + carry;
             let carry2 = res2 < res;
             parts[k] = res2;
-            carry = u32(carry1 || carry2) + msb;
+            carry = u32(carry1) + u32(carry2) + msb;
         }
         parts[i] = carry;
     }
@@ -200,6 +143,25 @@ fn gt(x: FixedDec, y: FixedDec) -> bool {
         return false;
     }
     return x.parts[0] > y.parts[0];
+}
+
+fn eq(x: FixedDec, y: FixedDec) -> bool {
+    if x.sign != y.sign || x.dec != y.dec {
+        return false;
+    }
+    var i = 0u;
+    var xp = x.parts;
+    var yp = y.parts;
+    while i < LEN - 2 {
+        if xp[i] != yp[i] {
+            return false;
+        }
+        i += 1u;
+    }
+    if abs(f32(xp[i]) - f32(yp[i])) > 1024 * 16 {
+        return false;
+    }
+    return true;
 }
 
 fn to_f32(value: FixedDec) -> f32 {

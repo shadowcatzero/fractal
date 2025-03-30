@@ -8,6 +8,9 @@ const FRAC_MASK: u32 = FRAC_BIT - 1;
 
 impl From<f32> for FixedDec {
     fn from(value: f32) -> Self {
+        if value.is_zero() {
+            return Self::zero();
+        }
         let raw = value.to_bits() & INV_SIGN_MASK;
         let mut exp = (raw >> 23) as i32 - 127;
         let mut frac = raw & FRAC_MASK;

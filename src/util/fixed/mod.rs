@@ -17,7 +17,7 @@ const NEG: bool = true;
 // Might want to try to make it abstract over the direction
 // of growth, or use a VecDeque, but doesn't seem worth for
 // now
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq, Hash)]
 pub struct FixedDec {
     sign: bool,
     dec: i32,
@@ -25,6 +25,14 @@ pub struct FixedDec {
 }
 
 impl FixedDec {
+    pub fn one() -> Self {
+        Self {
+            sign: POS,
+            dec: 1,
+            parts: vec![1],
+        }
+    }
+
     pub fn from_parts(sign: bool, dec: i32, parts: Vec<u32>) -> Self {
         Self { sign, dec, parts }
     }
@@ -62,16 +70,24 @@ impl FixedDec {
         } else {
             self.dec -= rem_beg as i32;
         }
+        if self.parts.is_empty() {
+            self.sign = POS;
+        }
     }
 
     pub fn set_whole_len(&mut self, len: i32) {
         let diff = len - self.dec;
-        self.parts
-            .splice(0..usize::try_from(-diff).unwrap_or(0), (0..diff).map(|_| 0));
+        let remove = 0..usize::try_from(-diff).unwrap_or(0).min(self.parts.len());
+        self.parts.splice(remove, (0..diff).map(|_| 0));
         self.dec += diff;
         if self.parts.is_empty() {
             self.dec = 0;
         }
+    }
+
+    pub fn with_whole_len(mut self, len: i32) -> Self {
+        self.set_whole_len(len);
+        self
     }
 
     pub fn set_dec_len(&mut self, len: i32) {
@@ -80,6 +96,31 @@ impl FixedDec {
         if self.parts.is_empty() {
             self.dec = 0;
         }
+    }
+
+    pub fn with_dec_len(mut self, len: i32) -> Self {
+        self.set_dec_len(len);
+        self
+    }
+
+    pub fn with_lens(self, whole_len: i32, dec_len: i32) -> Self {
+        self.with_whole_len(whole_len).with_dec_len(dec_len)
+    }
+
+    pub fn split_whole_dec(&self) -> (FixedDec, FixedDec) {
+        let take_skip = usize::try_from(self.dec).unwrap_or(0);
+        let whole = FixedDec {
+            sign: self.sign,
+            dec: self.dec,
+            parts: self.parts.iter().take(take_skip).copied().collect(),
+        };
+        let dec = if self.dec >= 0 { 0 } else { self.dec };
+        let dec = FixedDec {
+            sign: self.sign,
+            dec,
+            parts: self.parts.iter().skip(take_skip).copied().collect(),
+        };
+        (whole, dec)
     }
 
     pub fn set_precision(&mut self, prec: usize) {
@@ -93,6 +134,10 @@ impl FixedDec {
         bytes.extend((self.sign as u32).to_le_bytes());
         bytes.extend(self.dec.to_le_bytes());
         bytes.extend(self.parts.iter().flat_map(|p| p.to_le_bytes()));
+    }
+
+    pub fn parts(&self) -> &[u32] {
+        &self.parts
     }
 }
 

@@ -89,3 +89,39 @@ impl Texture {
         self.texture_desc.format
     }
 }
+
+pub struct ResizableTexture {
+    texture_desc: wgpu::TextureDescriptor<'static>,
+    view_desc: wgpu::TextureViewDescriptor<'static>,
+    pub texture: wgpu::Texture,
+    pub view: wgpu::TextureView,
+}
+
+impl ResizableTexture {
+    pub fn new(
+        device: &wgpu::Device,
+        texture_desc: wgpu::TextureDescriptor<'static>,
+        view_desc: wgpu::TextureViewDescriptor<'static>,
+    ) -> Self {
+        let texture = device.create_texture(&texture_desc);
+        let view = texture.create_view(&view_desc);
+        Self {
+            texture,
+            view,
+            texture_desc,
+            view_desc,
+        }
+    }
+    pub fn resize_layers(&mut self, device: &wgpu::Device, layers: u32) {
+        self.texture_desc.size.depth_or_array_layers = layers;
+        self.texture = device.create_texture(&self.texture_desc);
+        self.view = self.texture.create_view(&self.view_desc)
+    }
+
+    pub fn view_entry(&self, binding: u32) -> wgpu::BindGroupEntry {
+        wgpu::BindGroupEntry {
+            binding,
+            resource: wgpu::BindingResource::TextureView(&self.view),
+        }
+    }
+}

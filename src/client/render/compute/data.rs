@@ -6,28 +6,36 @@ use super::Camera;
 
 const VIEW_ALIGN: usize = 4 * 2;
 
-pub struct View {
+pub struct ComputeView {
     pub bytes: Vec<u8>,
 }
 
-impl View {
+impl ComputeView {
     pub fn bytes(&self) -> &[u8] {
         &self.bytes
     }
 }
 
-impl Default for View {
+impl Default for ComputeView {
     fn default() -> Self {
         let val = FixedDec::from_parts(false, 0, vec![0, 0, 0]);
-        Self::new(Vector2::zeros(), 0, &val, &val, &val)
+        Self::new(true, Vector2::zeros(), 0, &val, &val, &val)
     }
 }
 
-impl View {
-    fn new(stretch: Vector2<f32>, level: i32, scale: &FixedDec, x: &FixedDec, y: &FixedDec) -> Self {
+impl ComputeView {
+    fn new(
+        reset: bool,
+        dims: Vector2<u32>,
+        level: i32,
+        scale: &FixedDec,
+        x: &FixedDec,
+        y: &FixedDec,
+    ) -> Self {
         let mut bytes = Vec::new();
-        bytes.extend(bytemuck::cast_slice(&[stretch.x, stretch.y]));
+        bytes.extend((reset as u32).to_le_bytes());
         bytes.extend(level.to_le_bytes());
+        bytes.extend(bytemuck::cast_slice(&[dims.x, dims.y]));
         scale.to_bytes(&mut bytes);
         x.to_bytes(&mut bytes);
         y.to_bytes(&mut bytes);
@@ -35,16 +43,16 @@ impl View {
         if rem != 0 {
             bytes.extend((0..(VIEW_ALIGN - rem)).map(|_| 0));
         }
-        Self{ bytes }
+        Self { bytes }
     }
 
-    pub fn from_camera_size(camera: &Camera, size: &Vector2<u32>) -> Self {
+    pub fn from_camera_size(camera: &Camera, size: &Vector2<u32>, reset: bool, len: usize) -> Self {
         let mut x = camera.pos.x.clone();
         x.set_whole_len(1);
-        x.set_dec_len(2);
+        x.set_dec_len(len as i32 - 1);
         let mut y = camera.pos.y.clone();
         y.set_whole_len(1);
-        y.set_dec_len(2);
+        y.set_dec_len(len as i32 - 1);
 
         let fsize: Vector2<f32> = size.cast();
         let stretch = if size.x < size.y {
@@ -54,8 +62,14 @@ impl View {
         };
 
         let mut scale = camera.zoom.mult().clone();
-        scale.set_precision(3);
+        scale.set_precision(len);
 
-        Self::new(stretch, camera.zoom.level(), &scale, &x, &y)
+        Self::new(reset, *size, camera.zoom.level(), &scale, &x, &y)
+    }
+}
+
+impl PartialEq for ComputeView {
+    fn eq(&self, other: &Self) -> bool {
+        self.bytes[1..] == other.bytes[1..]
     }
 }

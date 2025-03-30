@@ -1,6 +1,9 @@
 use super::*;
 
-use std::ops::{Add, AddAssign, Mul, Neg, Shr, Sub, SubAssign};
+use std::{
+    cmp::Ordering,
+    ops::{Add, AddAssign, Mul, MulAssign, Neg, Shl, Shr, Sub, SubAssign},
+};
 
 impl Zero for FixedDec {
     fn zero() -> Self {
@@ -16,8 +19,29 @@ impl Zero for FixedDec {
     }
 }
 
+impl Shl<i32> for FixedDec {
+    type Output = FixedDec;
+    fn shl(self, rhs: i32) -> Self::Output {
+        &self << rhs
+    }
+}
+
+impl Shl<i32> for &FixedDec {
+    type Output = FixedDec;
+    fn shl(self, rhs: i32) -> Self::Output {
+        self >> -rhs
+    }
+}
+
 impl Shr<i32> for FixedDec {
-    type Output = Self;
+    type Output = FixedDec;
+    fn shr(self, rhs: i32) -> Self::Output {
+        &self >> rhs
+    }
+}
+
+impl Shr<i32> for &FixedDec {
+    type Output = FixedDec;
 
     fn shr(self, rhs: i32) -> Self::Output {
         let mut parts = Vec::with_capacity(self.parts.len());
@@ -26,14 +50,14 @@ impl Shr<i32> for FixedDec {
         let mask = (1 << sr) - 1;
         let dec = self.dec - rhs.div_floor(32);
         let mut rem = 0;
-        for part in self.parts {
+        for part in &self.parts {
             parts.push((part >> sr) ^ rem);
             rem = (part & mask).unbounded_shl(sl);
         }
         if rem != 0 {
             parts.push(rem);
         }
-        Self {
+        Self::Output {
             dec,
             parts,
             sign: self.sign,
@@ -124,6 +148,7 @@ fn add(dest: &mut FixedDec, src: &impl Fn(usize) -> u32, rhs: &FixedDec) {
             }
         }
     }
+    dest.trim()
 }
 
 fn new_dec(x: &FixedDec, y: &FixedDec) -> (i32, usize) {
@@ -153,6 +178,12 @@ impl Sub for FixedDec {
 
 impl SubAssign<&FixedDec> for FixedDec {
     fn sub_assign(&mut self, rhs: &FixedDec) {
+        *self += &-rhs;
+    }
+}
+
+impl SubAssign<FixedDec> for FixedDec {
+    fn sub_assign(&mut self, rhs: FixedDec) {
         *self += &-rhs;
     }
 }
@@ -230,6 +261,18 @@ impl Mul<FixedDec> for &FixedDec {
     }
 }
 
+impl MulAssign<&FixedDec> for FixedDec {
+    fn mul_assign(&mut self, rhs: &FixedDec) {
+        *self = &*self * rhs
+    }
+}
+
+impl MulAssign<FixedDec> for FixedDec {
+    fn mul_assign(&mut self, rhs: FixedDec) {
+        *self = &*self * rhs
+    }
+}
+
 fn mul_lmsb(x: u32, y: u32) -> (u32, u32) {
     let lsb = x.wrapping_mul(y);
     let a = x & 0xffff;
@@ -241,4 +284,66 @@ fn mul_lmsb(x: u32, y: u32) -> (u32, u32) {
     let carry = ad > (0xffffffff - bc);
     let msb = ((ad + bc) >> 16) + ((carry as u32) << 16) + b * d;
     (lsb, msb)
+}
+
+impl PartialOrd for FixedDec {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Ord for FixedDec {
+    fn cmp(&self, other: &Self) -> std::cmp::Ordering {
+        match (self.sign, other.sign) {
+            (POS, NEG) => return Ordering::Greater,
+            (NEG, POS) => return Ordering::Less,
+            _ => (),
+        }
+        match (self.dec.cmp(&other.dec), self.sign) {
+            (Ordering::Less, POS) => return Ordering::Less,
+            (Ordering::Less, NEG) => return Ordering::Greater,
+            (Ordering::Greater, POS) => return Ordering::Greater,
+            (Ordering::Greater, NEG) => return Ordering::Less,
+            (Ordering::Equal, _) => (),
+        }
+        match (self.parts.first().unwrap_or(&0).cmp(other.parts.first().unwrap_or(&0)), self.sign) {
+            (Ordering::Less, POS) => Ordering::Less,
+            (Ordering::Less, NEG) => Ordering::Greater,
+            (Ordering::Greater, POS) => Ordering::Greater,
+            (Ordering::Greater, NEG) => Ordering::Less,
+            (Ordering::Equal, _) => Ordering::Equal,
+        }
+    }
+}
+
+impl FixedDec {
+    pub fn floor(mut self) -> Self {
+        if self.sign == NEG {
+            let diff = self.parts.len() as i32 - self.dec;
+            if diff > 0
+                && self.parts[self.dec.max(0) as usize..]
+                    .iter()
+                    .any(|p| *p != 0)
+            {
+                self -= Self::one();
+            }
+        }
+        self.parts.truncate(self.dec.max(0) as usize);
+        self
+    }
+    pub fn ceil(mut self) -> Self {
+        if self.sign == NEG {
+            let diff = self.parts.len() as i32 - self.dec;
+            if diff > 0
+                && self.parts[self.dec.max(0) as usize..]
+                    .iter()
+                    .any(|p| *p != 0)
+            {
+                self -= Self::one();
+            }
+        }
+        self.parts.truncate(self.dec.max(0) as usize);
+        self += Self::one();
+        self
+    }
 }
