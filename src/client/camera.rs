@@ -39,8 +39,8 @@ impl Camera {
 impl Default for Camera {
     fn default() -> Self {
         Self {
-            pos: Vector2::zeros(),
-            zoom: Zoom::new(0, 0.0),
+            pos: Vector2::new(-0.5, 0.0).map(FixedDec::from),
+            zoom: Zoom::new(0, 2.1),
         }
     }
 }
