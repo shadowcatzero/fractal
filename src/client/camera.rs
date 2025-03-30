@@ -26,6 +26,14 @@ impl Camera {
             Vector2::new(1.0, fsize.y / fsize.x)
         }
     }
+    pub fn inv_scale(&self, size: &Vector2<u32>) -> Vector2<f32> {
+        let fsize: Vector2<f32> = size.cast();
+        if size.x < size.y {
+            Vector2::new(fsize.y / fsize.x, 1.0)
+        } else {
+            Vector2::new(1.0, fsize.x / fsize.y)
+        }
+    }
 }
 
 impl Default for Camera {
