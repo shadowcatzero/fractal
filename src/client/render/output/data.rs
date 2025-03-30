@@ -43,8 +43,8 @@ impl WindowView {
         //
         // let stretch = size.cast::<f32>() * camera.zoom.rel_zoom() / (CHUNK_WIDTH as f32);
 
-        let aspect = camera.inv_scale(size) * 2.0;
         let (pos, stretch) = if let Some(ss_cam) = ss_cam {
+            let aspect = camera.inv_scale(size) * 2.0;
             let s = camera.zoom.mult() * ss_cam.zoom.inv_mult();
             (
                 ((&camera.pos - &ss_cam.pos) * ss_cam.zoom.inv_mult().clone()).map(f32::from).component_mul(&aspect),

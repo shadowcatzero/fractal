@@ -72,6 +72,9 @@ fn main(
     let max = i + 1;
     let thresh = from_f32(2.0 * 2.0);
     loop {
+        // burning ship
+        // x.sign = 0;
+        // y.sign = 0;
         let x2 = mul(x, x);
         let y2 = mul(y, y);
         if gt(add(x2, y2), thresh) || i >= max {
