@@ -2,6 +2,7 @@ struct View {
     stretch: vec2<f32>,
     pos: vec2<f32>,
     rendered_chunks: vec2<u32>,
+    snapshot: u32,
 }
 
 @group(0) @binding(0)
@@ -13,11 +14,16 @@ var chunks: texture_2d_array<u32>;
 var tex: texture_2d<f32>;
 @group(0) @binding(3)
 var sam: sampler;
+@group(0) @binding(4)
+var ss_t: texture_2d<f32>;
+@group(0) @binding(5)
+var ss_s: sampler;
 
 struct VertexOutput {
     @builtin(position) vertex_pos: vec4<f32>,
     @location(0) world_pos: vec2<f32>,
     @location(1) tex_pos: vec2<f32>,
+    @location(2) ss_pos: vec2<f32>,
 };
 
 @vertex
@@ -43,6 +49,9 @@ fn vs_main(
     );
     out.tex_pos = pos2;
     out.tex_pos.y = 1.0 - out.tex_pos.y;
+    let pos3 = vec2(pos.x, -pos.y);
+    out.ss_pos = pos3 * view.stretch + view.pos;
+    out.ss_pos = (out.ss_pos + 1.0) / 2.0;
 
     return out;
 }
@@ -61,7 +70,14 @@ fn fs_main(
     // );
     // let cposf = vec2<f32>(cposu);
     // return vec4(cposf / rcf, 0.0, 1.0);
-    return textureSample(tex, sam, in.tex_pos);
+    let cur = textureSample(tex, sam, in.tex_pos);
+    let snp_bounds = all(in.ss_pos >= vec2(0.0)) && all(in.ss_pos <= vec2(1.0));
+    if all(cur.rgb == vec3(0.0)) && snp_bounds {
+        let snp = textureSample(ss_t, ss_s, in.ss_pos).rgb;
+        return vec4(snp * 0.3, 1.0);
+    } else {
+        return cur;
+    }
 }
 
 fn div_euclid(x: i32, y: i32) -> i32 {

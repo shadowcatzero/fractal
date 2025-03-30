@@ -8,6 +8,7 @@ pub struct Zoom {
     exp: f32,
     level: i32,
     mult: FixedDec,
+    inv_mult: FixedDec,
 }
 
 #[derive(Clone)]
@@ -41,11 +42,15 @@ impl Zoom {
         Self {
             exp: scale,
             level,
-            mult: mult(level, scale),
+            mult: zoom_mult(level, scale),
+            inv_mult: inv_zoom_mult(level, scale),
         }
     }
     pub fn mult(&self) -> &FixedDec {
         &self.mult
+    }
+    pub fn inv_mult(&self) -> &FixedDec {
+        &self.inv_mult
     }
     pub fn level(&self) -> i32 {
         self.level
@@ -67,10 +72,15 @@ impl AddAssign<f32> for Zoom {
             self.exp -= 1.0;
             self.level -= 1;
         }
-        self.mult = mult(self.level, self.exp);
+        self.mult = zoom_mult(self.level, self.exp);
+        self.inv_mult = inv_zoom_mult(self.level, self.exp);
     }
 }
 
-pub fn mult(level: i32, exp: f32) -> FixedDec {
+pub fn zoom_mult(level: i32, exp: f32) -> FixedDec {
     (FixedDec::from(1) >> level) * FixedDec::from(exp.exp2())
+}
+
+pub fn inv_zoom_mult(level: i32, exp: f32) -> FixedDec {
+    (FixedDec::from(1) << level) * FixedDec::from(1.0 / exp.exp2())
 }

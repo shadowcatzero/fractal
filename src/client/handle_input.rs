@@ -28,5 +28,8 @@ impl Client<'_> {
         if input.pressed(K::KeyD) {
             camera.pos.x += &speed;
         }
+        if input.pressed(K::KeyQ) {
+            self.snapshot = true;
+        }
     }
 }

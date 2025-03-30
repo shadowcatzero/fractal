@@ -46,6 +46,7 @@ impl ComputePipeline {
             }
         }
         if len != self.old_len {
+            println!("len: {}", len);
             self.old_len = len;
             self.pipeline = self.pipeline(device, &Self::shader(device, len));
             self.work.set(work_vec(size.x, size.y, len));

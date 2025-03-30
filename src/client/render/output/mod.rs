@@ -39,7 +39,31 @@ impl RenderPipeline {
         encoder: &mut wgpu::CommandEncoder,
         belt: &mut wgpu::util::StagingBelt,
         view: &WindowView,
+        input: &Texture,
+        snapshot: bool,
     ) {
+        if snapshot {
+            let size = input.texture.size();
+            if self.snapshot.texture.size() != size {
+                self.snapshot.resize(device, size);
+            }
+            encoder.copy_texture_to_texture(
+                wgpu::TexelCopyTextureInfoBase {
+                    texture: &input.texture,
+                    mip_level: 0,
+                    origin: wgpu::Origin3d::ZERO,
+                    aspect: wgpu::TextureAspect::All,
+                },
+                wgpu::TexelCopyTextureInfoBase {
+                    texture: &self.snapshot.texture,
+                    mip_level: 0,
+                    origin: wgpu::Origin3d::ZERO,
+                    aspect: wgpu::TextureAspect::All,
+                },
+                size,
+            );
+            self.bind_group = self.bind_group(device, input);
+        }
         self.view
             .update(device, encoder, belt, bytemuck::bytes_of(view));
     }

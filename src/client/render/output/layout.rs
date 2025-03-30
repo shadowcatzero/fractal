@@ -13,6 +13,7 @@ pub struct Layout {
     format: wgpu::TextureFormat,
     pub view: Storage,
     pub chunks: ResizableTexture,
+    pub snapshot: Texture,
 }
 
 pub const LABEL: &str = file!();
@@ -45,6 +46,29 @@ impl Layout {
             ..Default::default()
         };
         let chunks = ResizableTexture::new(device, texture_desc, view_desc);
+
+        let desc = wgpu::TextureDescriptor {
+            label: Some("compute output"),
+            size: wgpu::Extent3d {
+                width: config.width,
+                height: config.height,
+                depth_or_array_layers: 1,
+            },
+            mip_level_count: 1,
+            sample_count: 1,
+            dimension: wgpu::TextureDimension::D2,
+            format: wgpu::TextureFormat::Rgba8Unorm,
+            usage: wgpu::TextureUsages::STORAGE_BINDING
+                | wgpu::TextureUsages::TEXTURE_BINDING
+                | wgpu::TextureUsages::COPY_DST,
+            view_formats: &[],
+        };
+        let snapshot = Texture::init(
+            device,
+            desc,
+            wgpu::TextureViewDescriptor::default(),
+            wgpu::SamplerDescriptor::default(),
+        );
 
         let render_bind_layout =
             device.create_bind_group_layout(&wgpu::BindGroupLayoutDescriptor {
@@ -80,6 +104,22 @@ impl Layout {
                         ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
                         count: None,
                     },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 4,
+                        visibility: wgpu::ShaderStages::FRAGMENT | wgpu::ShaderStages::VERTEX,
+                        ty: wgpu::BindingType::Texture {
+                            multisampled: false,
+                            view_dimension: wgpu::TextureViewDimension::D2,
+                            sample_type: wgpu::TextureSampleType::Float { filterable: true },
+                        },
+                        count: None,
+                    },
+                    wgpu::BindGroupLayoutEntry {
+                        binding: 5,
+                        visibility: wgpu::ShaderStages::FRAGMENT,
+                        ty: wgpu::BindingType::Sampler(wgpu::SamplerBindingType::Filtering),
+                        count: None,
+                    },
                 ],
                 label: Some(LABEL),
             });
@@ -97,6 +137,7 @@ impl Layout {
             render_bind_layout,
             render_pipeline_layout,
             format: config.format,
+            snapshot,
         }
     }
 
@@ -108,6 +149,8 @@ impl Layout {
                 self.chunks.view_entry(1),
                 input.view_bind_group_entry(2),
                 input.sampler_bind_group_entry(3),
+                self.snapshot.view_bind_group_entry(4),
+                self.snapshot.sampler_bind_group_entry(5),
             ],
             label: Some(LABEL),
         })

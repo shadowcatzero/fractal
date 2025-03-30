@@ -121,12 +121,11 @@ impl Renderer<'_> {
         }
     }
 
-    pub fn render(&mut self, camera: &Camera) {
+    pub fn render(&mut self, camera: &Camera, snapshot: bool) {
 
+        // this comes from the fact that I want (0, 2) and (30, 4)
+        // probably a much better formula, or better yet let the user select
         self.len = (camera.zoom.level() as f32 / 15.0 + 2.0).round() as usize;
-        println!("{}", self.len);
-        // let new = (camera.zoom.level() as f32 / 15.0 + 2.0).round() as usize;
-        // println!("{}", new);
 
         self.compute_pipeline.update(
             &self.device,
@@ -136,12 +135,14 @@ impl Renderer<'_> {
             &self.size,
             self.len,
         );
-        self.chunk_view.update(camera, &self.size);
+        self.chunk_view.update(camera, &self.size, snapshot);
         self.render_pipeline.update(
             &self.device,
             &mut self.encoder,
             &mut self.staging_belt,
             &self.chunk_view.render,
+            &self.compute_pipeline.output,
+            snapshot,
         );
 
         let mut encoder = std::mem::replace(&mut self.encoder, Self::create_encoder(&self.device));

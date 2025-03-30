@@ -10,13 +10,20 @@ pub struct WindowView {
     pub stretch: Vector2<f32>,
     pub pos: Vector2<f32>,
     pub rendered_chunks: Vector2<u32>,
+    pub snapshot: u32,
 }
 
 unsafe impl bytemuck::Pod for WindowView {}
 unsafe impl bytemuck::Zeroable for WindowView {}
 
 impl WindowView {
-    pub fn from_camera_size(camera: &Camera, size: &Vector2<u32>) -> Self {
+    pub fn from_camera_size(
+        camera: &Camera,
+        ss_cam: Option<&Camera>,
+        size: &Vector2<u32>,
+        snapshot: bool,
+    ) -> Self {
+        // TODO: most of this is useless and just preparation for chunked textures if I add them
         let visible_chunks = (size * 2 / CHUNK_WIDTH).add_scalar(1);
         let rendered_chunks = Vector2::new(
             visible_chunks.x.next_power_of_two(),
@@ -36,10 +43,21 @@ impl WindowView {
 
         let stretch = size.cast::<f32>() * camera.zoom.rel_zoom() / (CHUNK_WIDTH as f32);
 
+        let (pos, stretch) = if let Some(ss_cam) = ss_cam {
+            let s = camera.zoom.mult() * ss_cam.zoom.inv_mult();
+            (
+                ((&camera.pos - &ss_cam.pos) * ss_cam.zoom.inv_mult().clone()).map(f32::from) * 2.0,
+                Vector2::from_element(f32::from(s)),
+            )
+        } else {
+            (Vector2::default(), Vector2::default())
+        };
+
         Self {
             pos,
             stretch,
             rendered_chunks,
+            snapshot: snapshot as u32,
         }
     }
 }

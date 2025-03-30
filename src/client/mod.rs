@@ -23,6 +23,7 @@ pub struct Client<'a> {
     exit: bool,
     prev_update: Instant,
     renderer: Renderer<'a>,
+    snapshot: bool,
 }
 
 impl Client<'_> {
@@ -40,6 +41,7 @@ impl Client<'_> {
             exit: false,
             prev_update: Instant::now(),
             renderer,
+            snapshot: false,
         }
     }
 
@@ -60,7 +62,8 @@ impl Client<'_> {
             WindowEvent::CloseRequested => self.exit = true,
             WindowEvent::Resized(size) => self.renderer.resize(size),
             WindowEvent::RedrawRequested => {
-                self.renderer.render(&self.camera);
+                self.renderer.render(&self.camera, self.snapshot);
+                self.snapshot = false;
                 self.window.request_redraw();
             }
             WindowEvent::CursorLeft { .. } => {
