@@ -4,6 +4,8 @@
 
 This is a mandelbrot set viewer written for fun bc it looks weird and cool to me. It's called fractal because it's easy to change the fractal in the code, and I would like to have some sort of simple scripting language for it eventually.
 
+It's normal rust, so `cargo run` should fully compile and start it.
+
 ## Features
 
 - Kind of infinite zoom in; wgsl, your vram, and your patience are the limiting factors
