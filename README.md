@@ -8,7 +8,7 @@ It's normal rust, so `cargo run` should fully compile and start it.
 
 ## Features
 
-- Kind of infinite zoom in; wgsl, your vram, and your patience are the limiting factors
+- Kind of infinite zoom in; dynamic precision, so wgsl, your vram, and your patience are the limiting factors
 - GPU based; not very optimized, but fast enough to be comfortable for relatively deep zooms
 - Does not stop iterating; can look noisy when dense, but doesn't "hide" detail from you (given enough time)
 - Real time movement controls for easy exploration
@@ -25,7 +25,7 @@ Snapshots will copy the current texture and let you view it as the new one gener
 
 ## Details
 
-- It uses my own, probably incorrect fixed point number implementation in both rust and wgsl
+- It uses my own, probably incorrect dynamic precision fixed point number implementation in both rust and wgsl
 - Regions where it's unclear whether it diverges are drawn black, and updated if it finds divergence; one distinct feature is that it just keeps iterating, it doesn't have a max like most viewers do, and it updates the colors in real time as it finds divergence. This process can be pretty cool to watch, especially in spiral areas.
 - When you zoom in far enough, it will automatically update the fixed point precision and recompile the shader so the quality doesn't drop off; it will go as far as your GPU / wgpu lets it
 - There are basically no optimizations other than each iteration tries to do minimal fixed point operations, which does not include copying, but you can actually get pretty deep with reasonable draw time.
