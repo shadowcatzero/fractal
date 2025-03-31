@@ -34,7 +34,7 @@ Snapshots will copy the current texture and let you view it as the new one gener
 
 ## Known Bugs
 
-- It crashes when you zoom out, because the renderer is not designed for zooming out, only in. An easy fix would be to cap the zoom, but I'm more interested in having the precision expand in the opposite direction as well for equations that require it (no clue if those exist).
+- It crashes when you zoom out too far (relative to the starting view), because the renderer is currently not designed for zooming out, only in. This does not matter at all for fractals like the mandelbrot set where the detail is confined in a small circle (radius 2). An easy fix would be to cap the zoom, but I'm more interested in having the precision expand in the opposite direction as well for equations that require it (no clue if those exist).
 - The snapshot texture gets stretched in some way when you resize the window. Don't know exactly why because that code was trial and errored (just wanted it to work), but I think I know where the fix would be and it shouldn't be complicated. Not a critical issue at all though.
 
 ## TODO List
