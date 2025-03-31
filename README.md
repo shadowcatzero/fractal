@@ -2,7 +2,7 @@
 
 ![screenshot image here](screenshot.png)
 
-This is a mandelbrot set viewer written for fun bc it looks weird and cool to me.
+This is a mandelbrot set viewer written for fun bc it looks weird and cool to me. It's called fractal because it's easy to change the fractal in the code, and I would like to have some sort of simple scripting language for it eventually.
 
 ## Features
 
