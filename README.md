@@ -6,7 +6,7 @@ This is a mandelbrot set viewer written for fun bc it looks weird and cool to me
 
 ## Features
 
-- Kind of infinite zoom in; wgsl, your VRAM, and your patience are the limiting factors
+- Kind of infinite zoom in; wgsl, your vram, and your patience are the limiting factors
 - GPU based; not very optimized, but fast enough to be comfortable for relatively deep zooms
 - Does not stop iterating; can look noisy when dense, but doesn't "hide" detail from you (given enough time)
 - Real time movement controls for easy exploration
