@@ -2,19 +2,21 @@
 
 ![screenshot image here](screenshot.png)
 
-This is a mandelbrot set arbitaray precision fractal viewer written for fun bc they look cool.
+This is a mandelbrot set viewer written for fun bc it looks weird and cool to me.
 
 ## Features
 
-- kind of infinite zoom in; wgsl buffers & shader arrays are the software limit, ignoring VRAM
-- does not stop iterating; can look ugly when it's noisy, but doesn't hide anything from you (given enough time)
-- snapshot feature for movement & zoom sanity when you're trying to go somewhere specific, needed because it resets the texture every time you move or zoom in
-- The color function just rotates the hue as the iterations go up, from red to green to blue and back to red
+- Kind of infinite zoom in; wgsl, your VRAM, and your patience are the limiting factors
+- GPU based; not very optimized, but fast enough to be comfortable for relatively deep zooms
+- Does not stop iterating; can look noisy when dense, but doesn't "hide" detail from you (given enough time)
+- Real time movement controls for easy exploration
+- Snapshot feature for movement & zoom sanity when you're trying to go somewhere specific, needed because it resets the texture every time you move or zoom in
+- The color is hue rotated as the iterations go up, from red to green to blue and back to red; not the most pleasant looking, but shows you a lot of detail which is the focus
 
 ## Controls
 
  - WASD for movement
- - scroll to zoom
+ - Scroll to zoom
  - Q to take a snapshot
 
 Snapshots will copy the current texture and let you view it as the new one generates, which is very important for your sanity when you zoom in really far; the undecided regions will be replaced with a darkened version of your snapshot, so you can still know where you are and move around.
@@ -35,7 +37,7 @@ Snapshots will copy the current texture and let you view it as the new one gener
 
 ## TODO List
 
-Not in order of priority
+not in order of priority
 
 - fix known bugs
 - remove old chunk rendering code
