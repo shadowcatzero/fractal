@@ -19,7 +19,7 @@ impl ComputeView {
 impl Default for ComputeView {
     fn default() -> Self {
         let val = FixedDec::from_parts(false, 0, vec![0, 0, 0]);
-        Self::new(true, Vector2::zeros(), 0, &val, &val, &val)
+        Self::new(true, Vector2::zeros(), Vector2::zeros(), 0, &val, &val, &val)
     }
 }
 
@@ -27,6 +27,7 @@ impl ComputeView {
     fn new(
         reset: bool,
         dims: Vector2<u32>,
+        stretch: Vector2<f32>,
         level: i32,
         scale: &FixedDec,
         x: &FixedDec,
@@ -36,6 +37,7 @@ impl ComputeView {
         bytes.extend((reset as u32).to_le_bytes());
         bytes.extend(level.to_le_bytes());
         bytes.extend(bytemuck::cast_slice(&[dims.x, dims.y]));
+        bytes.extend(bytemuck::cast_slice(&[stretch.x, stretch.y]));
         scale.to_bytes(&mut bytes);
         x.to_bytes(&mut bytes);
         y.to_bytes(&mut bytes);
@@ -46,7 +48,7 @@ impl ComputeView {
         Self { bytes }
     }
 
-    pub fn from_camera_size(camera: &Camera, size: &Vector2<u32>, reset: bool, len: usize) -> Self {
+    pub fn from_camera(camera: &Camera, reset: bool, len: usize) -> Self {
         let mut x = camera.pos.x.clone();
         x.set_whole_len(1);
         x.set_dec_len(len as i32 - 1);
@@ -54,17 +56,11 @@ impl ComputeView {
         y.set_whole_len(1);
         y.set_dec_len(len as i32 - 1);
 
-        let fsize: Vector2<f32> = size.cast();
-        let stretch = if size.x < size.y {
-            Vector2::new(fsize.x / fsize.y, 1.0)
-        } else {
-            Vector2::new(1.0, fsize.y / fsize.x)
-        };
-
+        let stretch = camera.stretch();
         let mut scale = camera.zoom.mult().clone();
         scale.set_precision(len);
 
-        Self::new(reset, *size, camera.zoom.level(), &scale, &x, &y)
+        Self::new(reset, camera.size, stretch, camera.zoom.level(), &scale, &x, &y)
     }
 }
 

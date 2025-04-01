@@ -7,7 +7,7 @@ use winit::{
 };
 
 pub struct Input {
-    pub mouse_pixel_pos: Vector2<f32>,
+    pub mouse_pos: Vector2<f32>,
     pub mouse_delta: Vector2<f32>,
 
     pressed: HashSet<KeyCode>,
@@ -23,7 +23,7 @@ pub struct Input {
 impl Input {
     pub fn new() -> Self {
         Self {
-            mouse_pixel_pos: Vector2::zeros(),
+            mouse_pos: Vector2::zeros(),
             mouse_delta: Vector2::zeros(),
             pressed: HashSet::new(),
             just_pressed: HashSet::new(),
@@ -67,11 +67,10 @@ impl Input {
                 };
             }
             WindowEvent::CursorLeft { .. } => {
-                self.pressed.clear();
-                self.mouse_pressed.clear();
+                self.clear();
             }
             WindowEvent::CursorMoved { position, .. } => {
-                self.mouse_pixel_pos = Vector2::new(position.x as f32, position.y as f32);
+                self.mouse_pos = Vector2::new(position.x as f32, position.y as f32);
             }
             WindowEvent::MouseInput { button, state, .. } => match state {
                 ElementState::Pressed => {

@@ -1,6 +1,7 @@
 use std::{sync::Arc, time::Instant};
 
 use camera::Camera;
+use handle_input::InputHandling;
 use input::Input;
 use render::Renderer;
 use winit::{
@@ -23,7 +24,7 @@ pub struct Client<'a> {
     exit: bool,
     prev_update: Instant,
     renderer: Renderer<'a>,
-    snapshot: bool,
+    handling: InputHandling,
 }
 
 impl Client<'_> {
@@ -41,7 +42,7 @@ impl Client<'_> {
             exit: false,
             prev_update: Instant::now(),
             renderer,
-            snapshot: false,
+            handling: InputHandling::new(),
         }
     }
 
@@ -60,16 +61,17 @@ impl Client<'_> {
     pub fn window_event(&mut self, event: WindowEvent) {
         match event {
             WindowEvent::CloseRequested => self.exit = true,
-            WindowEvent::Resized(size) => self.renderer.resize(size),
+            WindowEvent::Resized(size) => {
+                self.renderer.resize(size);
+                self.camera.size = *self.renderer.size();
+            }
             WindowEvent::RedrawRequested => {
-                self.renderer.render(&self.camera, self.snapshot);
-                self.snapshot = false;
+                self.renderer.render(&self.camera, self.handling.snapshot);
+                self.handling.snapshot = false;
                 self.window.request_redraw();
             }
-            WindowEvent::CursorLeft { .. } => {
-                self.input.clear();
-            }
-            _ => self.input.update_window(event),
+            _ => (),
         }
+        self.input.update_window(event);
     }
 }

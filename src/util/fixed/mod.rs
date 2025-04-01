@@ -139,6 +139,12 @@ impl FixedDec {
     pub fn parts(&self) -> &[u32] {
         &self.parts
     }
+
+    pub fn negate(&mut self) {
+        if !self.is_zero() {
+            self.sign = !self.sign;
+        }
+    }
 }
 
 impl Display for FixedDec {

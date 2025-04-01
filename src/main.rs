@@ -1,5 +1,6 @@
 #![feature(bigint_helper_methods)]
 #![feature(int_roundings)]
+#![feature(let_chains)]
 
 use client::ClientApp;
 

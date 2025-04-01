@@ -9,6 +9,7 @@ struct View {
     reset: u32,
     level: i32,
     dims: vec2<u32>,
+    stretch: vec2<f32>,
     scale: FixedDec,
     corner_x: FixedDec,
     corner_y: FixedDec,
@@ -28,30 +29,14 @@ fn main(
     if id.x > view.dims.x - 1 || id.y > view.dims.y - 1 {
         return;
     }
-    // TODO: actually use width
     let varwidth = LEN + 2;
     let workwidth = varwidth * 2 + 1;
     let worki = (id.x * view.dims.y + id.y) * workwidth;
     let xidx = worki + 1;
     let yidx = xidx + varwidth;
 
-    // let dec = view.corner_x.dec;
-    // var rel_x = FixedDec(POS, dec, array<u32, LEN>());
-    // rel_x.parts[0] = id.x;
-    // rel_x = shr(rel_x, view.level);
-    // var rel_y = FixedDec(POS, dec, array<u32, LEN>());
-    // rel_y.parts[0] = id.y;
-    // rel_y = shr(rel_y, view.level);
-    // let cx = add(view.corner_x, rel_x);
-    // let cy = add(view.corner_y, rel_y);
     let fdims = vec2<f32>(view.dims);
-    var stretch: vec2<f32>;
-    if fdims.x < fdims.y {
-        stretch = vec2(fdims.x / fdims.y, 1.0);
-    } else {
-        stretch = vec2(1.0, fdims.y / fdims.x);
-    }
-    let fpos = (vec2<f32>(id.xy) / fdims - 0.5) * stretch;
+    let fpos = (vec2<f32>(id.xy) / fdims - 0.5) * view.stretch;
     let cx = add(mul(from_f32(fpos.x), view.scale), view.corner_x);
     let cy = add(mul(from_f32(fpos.y), view.scale), view.corner_y);
     var x: FixedDec;

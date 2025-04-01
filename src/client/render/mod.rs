@@ -122,17 +122,14 @@ impl Renderer<'_> {
     }
 
     pub fn render(&mut self, camera: &Camera, snapshot: bool) {
-
-        // this comes from the fact that I want (0, 2) and (30, 4)
-        // probably a much better formula, or better yet let the user select
-        self.len = (camera.zoom.level() as f32 / 32.0 + 2.0).round() as usize;
+        // at level 0 I want 2, and should increase respective to bits needed for positioning
+        self.len = (camera.zoom.level() / 32) as usize + 2;
 
         self.compute_pipeline.update(
             &self.device,
             &mut self.encoder,
             &mut self.staging_belt,
             camera,
-            &self.size,
             self.len,
         );
         self.chunk_view.update(camera, &self.size, snapshot);
@@ -168,13 +165,19 @@ impl Renderer<'_> {
         self.config.width = size.width;
         self.config.height = size.height;
         self.surface.configure(&self.device, &self.config);
-        self.compute_pipeline.resize(&self.device, &mut self.encoder, &mut self.staging_belt, self.size, self.len);
-        self.render_pipeline.resize(&self.device, self.size, &self.compute_pipeline.output);
+        self.compute_pipeline
+            .resize(&self.device, self.size, self.len);
+        self.render_pipeline
+            .resize(&self.device, self.size, &self.compute_pipeline.output);
     }
 
     fn create_encoder(device: &wgpu::Device) -> wgpu::CommandEncoder {
         device.create_command_encoder(&wgpu::CommandEncoderDescriptor {
             label: Some("Render Encoder"),
         })
+    }
+
+    pub fn size(&self) -> &Vector2<u32> {
+        &self.size
     }
 }

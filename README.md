@@ -17,9 +17,9 @@ It's normal rust, so `cargo run` should fully compile and start it. It requires 
 
 ## Controls
 
- - WASD for movement
+ - WASD or left click & drag for movement
  - Scroll to zoom
- - Q to take a snapshot
+ - Q or right click to take a snapshot
 
 Snapshots will copy the current texture and let you view it as the new one generates, which is very important for your sanity when you zoom in really far; the undecided regions will be replaced with a darkened version of your snapshot, so you can still know where you are and move around.
 
@@ -48,8 +48,6 @@ not in order of priority
 - add auto snapshot; hard to figure out exactly when to take; maybe wait until at iter threshold dependent on zoom?
 - add ability to have multiple snapshots at once, so you can easily navigate around; also fade out snapshots that are far away zoom wise; also maybe save manual ones to disk so you can easily contiune exploring areas
 - add checkpointing that somehow lets you save & return to locations; even if this isn't added, add camera reset to easily get back to initial state; would also let you share locations with other people
-- zoom in on mouse
-- others controls for mouse; click & drag to move, maybe right click could be snapshot
 
 ## Cool Screenshots
 

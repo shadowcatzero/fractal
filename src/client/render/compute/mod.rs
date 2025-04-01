@@ -36,10 +36,9 @@ impl ComputePipeline {
         encoder: &mut wgpu::CommandEncoder,
         belt: &mut wgpu::util::StagingBelt,
         camera: &Camera,
-        size: &Vector2<u32>,
         len: usize,
     ) {
-        let mut view = ComputeView::from_camera_size(camera, size, false, len);
+        let mut view = ComputeView::from_camera(camera, false, len);
         if view != self.old_view {
             for (i, b) in 1u32.to_le_bytes().iter().enumerate() {
                 view.bytes[i] = *b;
@@ -49,7 +48,7 @@ impl ComputePipeline {
             println!("new len: {}", len);
             self.old_len = len;
             self.pipeline = self.pipeline(device, &Self::shader(device, len));
-            self.work.set(work_vec(size.x, size.y, len));
+            self.work.set(work_vec(camera.size.x, camera.size.y, len));
         }
         let updated = self.work.update(device, encoder, belt)
             | self.view.update(device, encoder, belt, view.bytes());
@@ -66,14 +65,7 @@ impl ComputePipeline {
         pass.dispatch_workgroups(240, 135, 1);
     }
 
-    pub fn resize(
-        &mut self,
-        device: &wgpu::Device,
-        encoder: &mut wgpu::CommandEncoder,
-        belt: &mut wgpu::util::StagingBelt,
-        size: Vector2<u32>,
-        len: usize,
-    ) {
+    pub fn resize(&mut self, device: &wgpu::Device, size: Vector2<u32>, len: usize) {
         self.work.set(work_vec(size.x, size.y, len));
         self.old_len = len;
         self.output.resize(
