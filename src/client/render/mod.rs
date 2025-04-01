@@ -122,8 +122,8 @@ impl Renderer<'_> {
     }
 
     pub fn render(&mut self, camera: &Camera, snapshot: bool) {
-        // at level 0 I want 2, and should increase respective to bits needed for positioning
-        self.len = (camera.zoom.level() / 32) as usize + 2;
+        // at level 0 I want 3, and should increase respective to bits needed for positioning
+        self.len = (camera.zoom.level() / 32) as usize + 3;
 
         self.compute_pipeline.update(
             &self.device,
