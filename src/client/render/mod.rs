@@ -132,7 +132,7 @@ impl Renderer<'_> {
             camera,
             self.len,
         );
-        self.chunk_view.update(camera, &self.size, snapshot);
+        self.chunk_view.update(camera, snapshot);
         self.render_pipeline.update(
             &self.device,
             &mut self.encoder,
@@ -168,7 +168,7 @@ impl Renderer<'_> {
         self.compute_pipeline
             .resize(&self.device, self.size, self.len);
         self.render_pipeline
-            .resize(&self.device, self.size, &self.compute_pipeline.output);
+            .resize(&self.device, &self.compute_pipeline.output);
     }
 
     fn create_encoder(device: &wgpu::Device) -> wgpu::CommandEncoder {

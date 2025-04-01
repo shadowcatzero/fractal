@@ -12,7 +12,6 @@ pub struct RenderPipeline {
     layout: Layout,
     pipeline: wgpu::RenderPipeline,
     bind_group: wgpu::BindGroup,
-    size: Vector2<u32>,
 }
 
 const SHADER: wgpu::ShaderModuleDescriptor<'_> = include_wgsl!("shader.wgsl");
@@ -23,12 +22,11 @@ impl RenderPipeline {
         config: &wgpu::SurfaceConfiguration,
         input: &Texture,
     ) -> Self {
-        let layout = Layout::init(device, config, input);
+        let layout = Layout::init(device, config);
         let shader = device.create_shader_module(SHADER);
         Self {
             pipeline: layout.pipeline(device, &shader),
             bind_group: layout.bind_group(device, input),
-            size: Vector2::zeros(),
             layout,
         }
     }
@@ -92,7 +90,7 @@ impl RenderPipeline {
         render_pass.draw(0..4, 0..1);
     }
 
-    pub fn resize(&mut self, device: &wgpu::Device, size: Vector2<u32>, input: &Texture) {
+    pub fn resize(&mut self, device: &wgpu::Device, input: &Texture) {
         self.bind_group = self.layout.bind_group(device, input);
     }
 }

@@ -10,7 +10,6 @@ use super::{
 pub struct Layout {
     bind_layout: wgpu::BindGroupLayout,
     pipeline_layout: wgpu::PipelineLayout,
-    format: wgpu::TextureFormat,
     pub output: Texture,
     pub view: Storage,
     pub work: ArrayBuffer<u32>,
@@ -81,7 +80,6 @@ impl Layout {
             bind_layout,
             pipeline_layout,
             work,
-            format: config.format,
         }
     }
 

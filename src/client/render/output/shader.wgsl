@@ -1,7 +1,6 @@
 struct View {
-    stretch: vec2<f32>,
-    pos: vec2<f32>,
-    rendered_chunks: vec2<u32>,
+    ss_stretch: vec2<f32>,
+    ss_pos: vec2<f32>,
     snapshot: u32,
 }
 
@@ -32,18 +31,15 @@ fn vs_main(
 ) -> VertexOutput {
     var out: VertexOutput;
 
-    let pos = vec2<f32>(
-        f32(vi % 2u),
-        f32(1 - vi / 2u),
-    ) * 2.0 - 1.0;
-    out.vertex_pos = vec4<f32>(pos.x, pos.y, 0.0, 1.0);
-
-    let pos2 = vec2<f32>(
+    let tpos = vec2<f32>(
         f32(vi % 2u),
         f32(1 - vi / 2u),
     );
-    out.tex_pos = pos2;
-    out.ss_pos = pos * view.stretch + view.pos;
+    let vpos = tpos * 2.0 - 1.0;
+    out.vertex_pos = vec4<f32>(vpos, 0.0, 1.0);
+
+    out.tex_pos = tpos;
+    out.ss_pos = vpos * view.ss_stretch + view.ss_pos;
     out.ss_pos = (out.ss_pos + 1.0) / 2.0;
 
     return out;
@@ -63,13 +59,3 @@ fn fs_main(
     }
 }
 
-fn div_euclid(x: i32, y: i32) -> i32 {
-    if x < 0 {
-        return -((-x - 1) / y) - 1;
-    }
-    return x / y;
-}
-
-fn rem_euclid(x: i32, y: i32) -> i32 {
-    return x - div_euclid(x, y) * y;
-}

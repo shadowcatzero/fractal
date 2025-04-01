@@ -1,5 +1,5 @@
 use nalgebra::Vector2;
-use std::ops::{AddAssign, Neg};
+use std::ops::AddAssign;
 
 use crate::util::FixedDec;
 
@@ -87,9 +87,6 @@ impl Zoom {
     }
     pub fn level(&self) -> i32 {
         self.level
-    }
-    pub fn rel_zoom(&self) -> f32 {
-        self.exp.exp2()
     }
 }
 

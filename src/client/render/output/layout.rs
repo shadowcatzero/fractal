@@ -1,5 +1,3 @@
-use nalgebra::Vector2;
-
 use crate::client::render::util::Texture;
 
 use super::{
@@ -22,7 +20,6 @@ impl Layout {
     pub fn init(
         device: &wgpu::Device,
         config: &wgpu::SurfaceConfiguration,
-        input: &Texture,
     ) -> Self {
         let view = Storage::init_with(device, "view", bytemuck::bytes_of(&WindowView::default()));
 
