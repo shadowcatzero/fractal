@@ -1,6 +1,6 @@
 # Fractal Viewer
 
-![screenshot image here](screenshot.png)
+![screenshot image here](screenshots/2.png)
 
 This is a mandelbrot set viewer written for fun bc it looks weird and cool to me. It's called fractal because it's easy to change the fractal in the code, and I would like to have some sort of simple scripting language for it eventually.
 
@@ -50,3 +50,11 @@ not in order of priority
 - add checkpointing that somehow lets you save & return to locations; even if this isn't added, add camera reset to easily get back to initial state; would also let you share locations with other people
 - zoom in on mouse
 - others controls for mouse; click & drag to move, maybe right click could be snapshot
+
+## Cool Screenshots
+
+<details>
+![screenshot image here](screenshots/1.png)
+![screenshot image here](screenshots/2.png)
+</details>
+
