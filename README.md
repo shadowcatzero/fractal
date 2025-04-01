@@ -54,7 +54,10 @@ not in order of priority
 ## Cool Screenshots
 
 <details>
+
 ![screenshot image here](screenshots/1.png)
-![screenshot image here](screenshots/2.png)
+
+![screenshot image here](screenshots/3.png)
+
 </details>
 
